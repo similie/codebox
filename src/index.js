@@ -14,7 +14,7 @@ const { DEFAULT_THEMES, COMMON_LANGUAGES } = require('./constants');
 //#endregion
 
 class CodeBox {
-  constructor({ data, api, config }){
+  constructor({ data, api, config, readOnly, block }){
     this.api = api;
     this.config = {
       themeName: config.themeName && typeof config.themeName === 'string' ? config.themeName : '',
@@ -36,6 +36,7 @@ class CodeBox {
     this._injectHighlightJSScriptElement();
     this._injectHighlightJSCSSElement();
 
+    this.readOnly = readOnly;
     this.api.listeners.on(window, 'click', this._closeAllLanguageSelects, true);
   }
 
@@ -62,13 +63,19 @@ class CodeBox {
     return true;
   }
 
-  render(){
-    const codeAreaHolder = document.createElement('pre');
-    const languageSelect = this._createLanguageSelectElement();
+  
+  static get isReadOnlySupported() {
+    return true;
+  }
 
+ 
+  render(){
+    
+    const codeAreaHolder = document.createElement('pre');    
+    const languageSelect = this._createLanguageSelectElement();
     codeAreaHolder.setAttribute('class', 'codeBoxHolder');
     this.codeArea.setAttribute('class', `codeBoxTextArea ${ this.config.useDefaultTheme } ${ this.data.language }`);
-    this.codeArea.setAttribute('contenteditable', true);
+    this.codeArea.setAttribute('contenteditable', !this.readOnly);
     this.codeArea.innerHTML = this.data.code;
     this.api.listeners.on(this.codeArea, 'blur', event => this._highlightCodeArea(event), false);
     this.api.listeners.on(this.codeArea, 'paste', event => this._handleCodeAreaPaste(event), false);
@@ -118,7 +125,6 @@ class CodeBox {
       selectItem.setAttribute('data-key', language[0]);
       selectItem.textContent = language[1];
       this.api.listeners.on(selectItem, 'click', event => this._handleSelectItemClick(event, language), false);
-
       selectPreview.appendChild(selectItem);
     });
 
@@ -181,7 +187,9 @@ class CodeBox {
 
       if (head) head.appendChild(link);
     }
-    else highlightJSCSSElement.setAttribute('href', highlightJSCSSURL);
+    else {
+      highlightJSCSSElement.setAttribute('href', highlightJSCSSURL);
+    } 
   }
 
   _getThemeURLFromConfig(){
